@@ -57,12 +57,7 @@ deadlineSchema.methods.canEdit = function() {
   return now < oneMinuteBefore;
 };
 
-// ✅ ADDED: Method to check if reminder can be restored (within 2 minutes of deadline)
-deadlineSchema.methods.canRestore = function() {
-  const now = new Date();
-  const twoMinutesAfter = new Date(this.deadline.getTime() + 2 * 60 * 1000);
-  return now < twoMinutesAfter;
-};
+// ❌ REMOVED: canRestore method completely
 
 // Virtual for overdue check
 deadlineSchema.virtual('isOverdue').get(function() {
