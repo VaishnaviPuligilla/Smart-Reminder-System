@@ -258,13 +258,17 @@ export const sendReminderNotifications = async () => {
   try {
     console.log('Checking for reminders to send...');
 
-    // Get current time (using local server time which should be IST)
+    // Get current time in IST (Indian Standard Time = UTC+5:30)
     const now = new Date();
-    const currentHours = String(now.getHours()).padStart(2, '0');
-    const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istTime = new Date(now.getTime() + istOffset);
+    
+    const currentHours = String(istTime.getUTCHours()).padStart(2, '0');
+    const currentMinutes = String(istTime.getUTCMinutes()).padStart(2, '0');
     const currentTime = `${currentHours}:${currentMinutes}`;
 
-    console.log(`Current local time: ${now.toLocaleDateString()} ${currentTime}`);
+    console.log(`Server UTC time: ${now.toISOString()}`);
+    console.log(`IST time: ${istTime.toISOString()} -> ${currentTime}`);
 
     // Debug: Check all unprocessed reminders
     const allReminders = await Reminder.find({
@@ -278,15 +282,30 @@ export const sendReminderNotifications = async () => {
       console.log(`- ${r.reminderName}: ${reminderDate.toDateString()} at ${r.time}`);
     });
 
-    // Get today's date range (start of day to end of day)
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    // Get today's date range in IST
+    const todayStartIST = new Date(Date.UTC(
+      istTime.getUTCFullYear(), 
+      istTime.getUTCMonth(), 
+      istTime.getUTCDate(), 
+      0, 0, 0
+    ));
+    todayStartIST.setTime(todayStartIST.getTime() - istOffset); // Convert to UTC for DB query
+    
+    const todayEndIST = new Date(Date.UTC(
+      istTime.getUTCFullYear(), 
+      istTime.getUTCMonth(), 
+      istTime.getUTCDate(), 
+      23, 59, 59
+    ));
+    todayEndIST.setTime(todayEndIST.getTime() - istOffset); // Convert to UTC for DB query
+
+    console.log(`Looking for reminders between ${todayStartIST.toISOString()} and ${todayEndIST.toISOString()}`);
 
     // Find reminders that match current time and are for today
     const reminders = await Reminder.find({
       isDeleted: false,
       notificationSent: false,
-      date: { $gte: todayStart, $lte: todayEnd },
+      date: { $gte: todayStartIST, $lte: todayEndIST },
       time: currentTime
     }).populate('userId', 'email username');
 
