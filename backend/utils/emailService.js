@@ -11,8 +11,21 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Verify transporter on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ SMTP Connection Error:', error.message);
+  } else {
+    console.log('✅ SMTP Server is ready to send emails');
+  }
+});
+
 export const sendEmail = async (to, subject, html) => {
   try {
+    console.log(`Attempting to send email to: ${to}`);
+    console.log(`SMTP_EMAIL configured: ${process.env.SMTP_EMAIL ? 'Yes' : 'No'}`);
+    console.log(`SMTP_PASSWORD configured: ${process.env.SMTP_PASSWORD ? 'Yes' : 'No'}`);
+    
     const mailOptions = {
       from: process.env.SMTP_EMAIL,
       to,
@@ -21,10 +34,13 @@ export const sendEmail = async (to, subject, html) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.response);
+    console.log('✅ Email sent successfully:', info.response);
+    console.log('Message ID:', info.messageId);
     return true;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('❌ Error sending email:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Full error:', JSON.stringify(error, null, 2));
     return false;
   }
 };

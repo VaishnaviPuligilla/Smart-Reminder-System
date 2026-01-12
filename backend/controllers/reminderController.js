@@ -314,6 +314,7 @@ export const sendReminderNotifications = async () => {
     for (const reminder of reminders) {
       try {
         console.log(`Sending notification for: ${reminder.reminderName} to ${reminder.userId.email}`);
+        console.log(`User data:`, JSON.stringify({ email: reminder.userId.email, username: reminder.userId.username }));
         
         // Send email notification
         const emailSent = await sendReminderNotification(
@@ -322,18 +323,21 @@ export const sendReminderNotifications = async () => {
           reminder.description
         );
 
+        console.log(`Email send result: ${emailSent}`);
+
         if (emailSent) {
           // Mark as notification sent
           reminder.notificationSent = true;
           reminder.isCompleted = true;
           await reminder.save();
 
-          console.log(`Notification sent successfully for reminder: ${reminder.reminderName}`);
+          console.log(`✅ Notification sent successfully for reminder: ${reminder.reminderName}`);
         } else {
-          console.log(`Failed to send email for reminder: ${reminder.reminderName}`);
+          console.log(`❌ Failed to send email for reminder: ${reminder.reminderName}`);
         }
       } catch (error) {
-        console.error(`Error sending notification for reminder ${reminder._id}:`, error);
+        console.error(`❌ Error sending notification for reminder ${reminder._id}:`, error.message);
+        console.error(`Full error:`, error);
       }
     }
   } catch (error) {
